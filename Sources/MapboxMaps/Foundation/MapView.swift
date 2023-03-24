@@ -689,12 +689,33 @@ open class MapView: UIView {
 
         return false
     }
+    
+    private let writer = MapboxMovieWriter()
+}
+
+extension MapView {
+    
+    public var recordedVideoPath: URL {
+        writer.cacheUrl
+    }
+    
+    public func startRecordVideo() {
+        writer.startWriting()
+    }
+    
+    public func finishRecordVideo() {
+        writer.finishWriting { }
+    }
 }
 
 extension MapView: DelegatingMapClientDelegate {
     internal func scheduleRepaint() {
         guard let metalView = metalView, !metalView.bounds.isEmpty else {
             return
+        }
+        
+        if let intexture = metalView.currentDrawable?.texture {
+            _ = writer.append(intexture)
         }
 
         needsDisplayRefresh = true
@@ -717,6 +738,7 @@ extension MapView: DelegatingMapClientDelegate {
         metalView.isPaused = true
         metalView.enableSetNeedsDisplay = false
         metalView.presentsWithTransaction = false
+        metalView.framebufferOnly = false
 
         insertSubview(metalView, at: 0)
 
