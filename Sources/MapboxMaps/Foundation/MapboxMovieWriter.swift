@@ -31,7 +31,11 @@ class MapboxMovieWriter {
     }
     
     func append(_ texture: MTLTexture) -> Bool {
-        if let pixelBuffer = texture.toPixelBuffer {
+        guard isWritting else {
+            // Write is controlled within the program, but this is not necessary
+            return false
+        }
+        if let pixelBuffer = texture.pixelBuffer {
             return append(pixelBuffer)
         }
         return false
@@ -185,6 +189,38 @@ extension MTLTexture {
         getBytes(memoryPointer, bytesPerRow: pixelBytesPerRow, from: pixelRegion, mipmapLevel: 0)
         
         return pixelBuffer
+    }
+    
+    var pixelBuffer: CVPixelBuffer? {
+        
+        let bytesPerRow = width * 4
+        let pixelRegion = MTLRegionMake2D(0, 0, width, height)
+        
+                
+        let dataPtr = UnsafeMutablePointer<UInt8>.allocate(capacity: width * height * 4)
+        
+        getBytes(dataPtr, bytesPerRow: bytesPerRow, from: pixelRegion, mipmapLevel: 0)
+        
+        let releaseCallback: CVPixelBufferReleaseBytesCallback = { (mutablePointer, pointer) in
+            mutablePointer?.deallocate()
+        }
+    
+        var pxBuffer: CVPixelBuffer?
+        
+        CVPixelBufferCreateWithBytes(
+            kCFAllocatorDefault,
+            width,
+            height,
+            kCVPixelFormatType_32BGRA,
+            dataPtr,
+            width * 4,
+            releaseCallback,
+            dataPtr,
+            [kCVPixelBufferIOSurfacePropertiesKey: [:]] as CFDictionary,
+            &pxBuffer
+        )
+                    
+        return pxBuffer
     }
 }
 
