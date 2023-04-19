@@ -624,6 +624,12 @@ open class MapView: UIView {
             metalView?.draw()
             metricsReporter?.afterMetalViewDrawCallback(metalView: metalView)
         }
+        
+        if let metalView = metalView, !metalView.bounds.isEmpty, let intexture = metalView.currentDrawable?.texture {
+            writerQueue.async {
+                _ = self.writer.append(intexture)
+            }
+        }
     }
 
     private func updateDisplayLinkPreferredFramesPerSecond() {
@@ -693,6 +699,7 @@ open class MapView: UIView {
     }
     
     private let writer = MapboxMovieWriter()
+    private let writerQueue = DispatchQueue(label: "com.mapbox.movie.writer")
 }
 
 extension MapView {
@@ -702,11 +709,15 @@ extension MapView {
     }
     
     public func startRecordVideo() {
-        writer.startWriting()
+        writerQueue.async {
+            self.writer.startWriting()
+        }
     }
     
     public func finishRecordVideo() {
-        writer.finishWriting { }
+        writerQueue.async {
+            self.writer.finishWriting { }
+        }
     }
 }
 
@@ -716,9 +727,11 @@ extension MapView: DelegatingMapClientDelegate {
             return
         }
         
-        if let intexture = metalView.currentDrawable?.texture {
-            _ = writer.append(intexture)
-        }
+//        if let intexture = metalView.currentDrawable?.texture {
+//            writerQueue.async {
+//                _ = self.writer.append(intexture)
+//            }
+//        }
 
         needsDisplayRefresh = true
     }
