@@ -16,6 +16,7 @@ class MapboxMovieWriter {
     func startWriting() {
         isWritting = true
         beginDate = Date()
+        generateCacheURL("effect_video.mov")
         print("Start synthesizing video \n save path->\(String(describing: self.cacheUrl))")
     }
     
